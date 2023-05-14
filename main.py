@@ -18,41 +18,41 @@ bot = telebot.TeleBot(API_TOKEN, parse_mode=None)
 #         messages: []
 #     }
 # }
-userStates = {
-    1635159241: {
-        "userState": "1",
-        "messages": [
-            ["1", "hello he heheheheh"],
-            ["2", "hello bruh asdas hasdkjhb asashdja "],
-            ["3", "hello this isx 3 s"],
-            ["4", "hello"],
-            ["5", "hello"]
-        ]
-    }
-}
+userStates = {}
 
 dimensions = {
     "1": {
         "position": (23, 300),
         "width": 10,
-        "lines": 3
+        "lines": 3,
+        "font": 50
     },
 
     "2": {
         "position": (430, 50),
         "width": 10,
-        "lines": 3
+        "lines": 3,
+        "font": 50
     },
 
     "3": {
-        "position": (13, 750),
+        "position": (13, 720),
         "width": 10,
-        "lines": 3
+        "lines": 3,
+        "font": 50
     },
     "4": {
-        "position": (220, 600),
+        "position": (300, 800),
+        "width": 20,
+        "lines": 3,
+        "font": 30
+    },
+
+    "5": {
+        "position": (550, 600),
         "width": 10,
-        "lines": 3
+        "lines": 3,
+        "font": 30
     }
 }
 
@@ -66,10 +66,8 @@ def send_welcome(message):
     button1 = InlineKeyboardButton("1", callback_data="option1")
     button2 = InlineKeyboardButton("2", callback_data="option2")
     button3 = InlineKeyboardButton("3", callback_data="option3")
-    button4 = InlineKeyboardButton("4", callback_data="option4")
-    button5 = InlineKeyboardButton("5", callback_data="option5")
 
-    markup.add(button1, button2, button3, button4, button5)
+    markup.add(button1, button2, button3)
 
     bot.send_message(
         chatID,
@@ -117,7 +115,16 @@ def setMessage(message, option):
         userStates[chatID]["messages"] = []
     
     finally:
-        userStates[chatID]["messages"].append([option, text])
+        if option == '1':
+            userStates[chatID]["messages"].append(['1', text])
+            userStates[chatID]["messages"].append(['4', text])
+        
+        elif option == '2':
+            userStates[chatID]["messages"].append(['2', text])
+            userStates[chatID]["messages"].append(['5', text])
+        
+        else:
+            userStates[chatID]["messages"].append([option, text])
 
 def drawBackground(draw, text_position, text, font, border_size=4):
     for i in range(-border_size, border_size+1):
@@ -132,27 +139,24 @@ def drawBackground(draw, text_position, text, font, border_size=4):
 def generateMeme(chatID):
     img = Image.open("images/meme_one.jpg")
     draw = ImageDraw.Draw(img)
-    font = ImageFont.truetype("Poppins-Black.ttf", 50)
+    try:
+        for option, message in userStates[chatID]["messages"]:
+            font = ImageFont.truetype(
+                "Poppins-Black.ttf",
+                dimensions[option]["font"]
+            )
 
-    for option, message in userStates[chatID]["messages"]:
-        if option != "3":
-            continue
 
-        text_position = dimensions[option]["position"]
-        wrapper = textwrap.TextWrapper(width=dimensions[option]["width"])
-        lines = wrapper.wrap(text=message)
+            text_position = dimensions[option]["position"]
+            wrapper = textwrap.TextWrapper(width=dimensions[option]["width"])
+            lines = wrapper.wrap(text=message)
 
-        for line in lines:
-            drawBackground(draw, text_position, line, font)
-            text_position = (text_position[0], text_position[1]+60)
-
-    # text_position = (23, 420)
-    # wrapper = textwrap.TextWrapper(width=10)
-    # lines = wrapper.wrap(text=text)
-
-    # for line in lines:
-    #     drawBackground(draw, text_position, line, font)
-    #     text_position = (text_position[0], text_position[1]+60)
+            for line in lines:
+                drawBackground(draw, text_position, line, font)
+                text_position = (text_position[0], text_position[1]+60)
+        
+    except KeyError:
+        return 2
 
     return img
 
@@ -160,6 +164,10 @@ def generateMeme(chatID):
 def send_meme(message):
     chatID = message.chat.id
     meme = generateMeme(chatID)
+    if meme == 2:
+        bot.send_message(chatID, "You have not selected all the options")
+        return
+
     bot.send_photo(chatID, meme)
 
 @bot.message_handler(func=lambda message: True)
