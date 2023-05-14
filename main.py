@@ -61,7 +61,18 @@ dimensions = {
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
+    global userStates
     chatID = message.chat.id
+    user = message.from_user.id
+
+    userStates = {
+        user: {
+            "userState": 0,
+            "messages": []
+        }
+    }
+
+    print(userStates)
     basePhoto = open('images/template.jpg', 'rb')
     bot.send_photo(chatID, basePhoto)
 
@@ -80,54 +91,87 @@ def send_welcome(message):
 
 @bot.callback_query_handler(func=lambda call: True)
 def handle_callback(call):
+    print("userstates", userStates)
     chatID = call.message.chat.id
-    try: 
-        userStates[chatID]
-    
-    except KeyError:
-        userStates[chatID] = {}
+    user = call.from_user.id
+    print("user: ", user)
+    print("chatid: ", chatID)
 
-    if call.data == "option1":
+    if user not in userStates:
+        print("User not in userStates")
+        return
+
+    elif call.data == "option1":
         bot.send_message(chatID, "Send me the text for 1")
-        userStates[chatID]["userState"] = "1"
+        userStates[user]["userState"] = "1"
+        print(userStates)
 
     elif call.data == "option2":
         bot.send_message(chatID, "Send me the text for 2")
-        userStates[chatID]["userState"] = "2"
+        userStates[user]["userState"] = "2"
+        print(userStates)
     
     elif call.data == "option3":
         bot.send_message(chatID, "Send me the text for 3")
-        userStates[chatID]["userState"] = "3"
+        userStates[user]["userState"] = "3"
+        print(userStates)
 
     elif call.data == "option4":
         bot.send_message(chatID, "Send me the text for 4")
-        userStates[chatID]["userState"] = "4"
+        userStates[user]["userState"] = "4"
+        print(userStates)
     
     elif call.data == "option5":
         bot.send_message(chatID, "Send me the text for 5")
-        userStates[chatID]["userState"] = "5"
+        userStates[user]["userState"] = "5"
+        print(userStates)
+
+@bot.message_handler(func=lambda message: True)
+def handle_message(message):
+    print(userStates)
+    chatID = message.from_user.id
+    user = message.from_user.id
+
+    print(chatID)
+    if user not in userStates:
+        return
+
+    setMessage(message, option=userStates[user]["userState"])
+
+    if len(userStates[user]["messages"]) == 5:
+        print("Generating meme")
+        meme = generateMeme(user)
+        if meme == 2:
+            bot.send_message(chatID, "You have not selected all the options")
+            return
+        
+        bot.send_photo(chatID, meme)
+        userStates[user] = {}
 
 def setMessage(message, option):
+    print(userStates)
     chatID = message.chat.id
+    user = message.from_user.id
+
+    if user not in userStates:
+        print("user not in userStates")
+        return
+
     text = message.text
 
-    try: 
-        userStates[chatID]["messages"]
-    
-    except KeyError:
-        userStates[chatID]["messages"] = []
-    
-    finally:
-        if option == '1':
-            userStates[chatID]["messages"].append(['1', text])
-            userStates[chatID]["messages"].append(['4', text])
+    print(userStates)
+    userStates[user]["messages"]
+
+    if option == '1':
+        userStates[user]["messages"].append(['1', text])
+        userStates[user]["messages"].append(['4', text])
         
-        elif option == '2':
-            userStates[chatID]["messages"].append(['2', text])
-            userStates[chatID]["messages"].append(['5', text])
+    elif option == '2':
+        userStates[user]["messages"].append(['2', text])
+        userStates[user]["messages"].append(['5', text])
         
-        else:
-            userStates[chatID]["messages"].append([option, text])
+    else:
+        userStates[user]["messages"].append([option, text])
 
 def drawBackground(draw, text_position, text, font, border_size=4):
     for i in range(-border_size, border_size+1):
@@ -165,23 +209,5 @@ def generateMeme(chatID):
         return 2
 
     return img
-
-@bot.message_handler(func=lambda message: True)
-def handle_message(message):
-    chatID = message.chat.id
-    if chatID not in userStates and len(userStates[chatID]) == 0:
-        return
-
-    setMessage(message, option=userStates[chatID]["userState"])
-
-    if len(userStates[chatID]["messages"]) == 5:
-        print("Generating meme")
-        meme = generateMeme(chatID)
-        if meme == 2:
-            bot.send_message(chatID, "You have not selected all the options")
-            return
-        
-        bot.send_photo(chatID, meme)
-        userStates[chatID] = {}
 
 bot.infinity_polling()
