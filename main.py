@@ -1,11 +1,9 @@
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from dotenv import load_dotenv, find_dotenv
 from PIL import Image, ImageDraw, ImageFont
+import textwrap
 import telebot
 import os
-
-
-import textwrap
 
 load_dotenv(find_dotenv())
 
@@ -25,34 +23,39 @@ dimensions = {
         "position": (23, 300),
         "width": 10,
         "lines": 3,
-        "font": 50
+        "font": 50,
+        "lineWidth": 60
     },
 
     "2": {
         "position": (430, 50),
         "width": 10,
         "lines": 3,
-        "font": 50
+        "font": 50,
+        "lineWidth": 60
     },
 
     "3": {
         "position": (13, 720),
         "width": 10,
         "lines": 3,
-        "font": 50
+        "font": 50,
+        "lineWidth": 60
     },
     "4": {
         "position": (300, 800),
         "width": 20,
         "lines": 3,
-        "font": 30
+        "font": 30,
+        "lineWidth": 40
     },
 
     "5": {
         "position": (550, 600),
         "width": 10,
         "lines": 3,
-        "font": 30
+        "font": 30,
+        "lineWidth": 40
     }
 }
 
@@ -146,29 +149,22 @@ def generateMeme(chatID):
                 dimensions[option]["font"]
             )
 
-
             text_position = dimensions[option]["position"]
             wrapper = textwrap.TextWrapper(width=dimensions[option]["width"])
             lines = wrapper.wrap(text=message)
 
             for line in lines:
                 drawBackground(draw, text_position, line, font)
-                text_position = (text_position[0], text_position[1]+60)
+                text_position = (
+                    text_position[0],
+                    text_position[1]
+                    + dimensions[option]["lineWidth"]
+                )
         
     except KeyError:
         return 2
 
     return img
-
-@bot.message_handler(commands=['meme'])
-def send_meme(message):
-    chatID = message.chat.id
-    meme = generateMeme(chatID)
-    if meme == 2:
-        bot.send_message(chatID, "You have not selected all the options")
-        return
-
-    bot.send_photo(chatID, meme)
 
 @bot.message_handler(func=lambda message: True)
 def handle_message(message):
@@ -177,10 +173,15 @@ def handle_message(message):
         return
 
     setMessage(message, option=userStates[chatID]["userState"])
-    print(userStates)
 
     if len(userStates[chatID]["messages"]) == 5:
-        pass
-
+        print("Generating meme")
+        meme = generateMeme(chatID)
+        if meme == 2:
+            bot.send_message(chatID, "You have not selected all the options")
+            return
+        
+        bot.send_photo(chatID, meme)
+        userStates[chatID] = {}
 
 bot.infinity_polling()
