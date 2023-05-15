@@ -28,7 +28,7 @@ dimensions = {
     },
 
     "2": {
-        "position": (470, 50),
+        "position": (500, 80),
         "width": 10,
         "lines": 3,
         "font": 50,
